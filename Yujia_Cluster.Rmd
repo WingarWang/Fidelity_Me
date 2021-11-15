@@ -58,7 +58,7 @@ dtw_function <- function(x,begin_date,end_date){
 
 ```{r}
 # result <- dtw_function(actual_daily,"2021-03-29","2021-07-04",320)
-result1 <- dtw_function(efficiency_daily,"2021-01-01","2021-08-01")
+result1 <- dtw_function(efficiency_daily,"2021-03-29","2021-07-04")
 
 # Different cluster method: K-mean cluster, hierarchical cluster
 # K-mean cluster
@@ -88,7 +88,7 @@ plot(k.values, wss_values,
 # delete cluster3
 efficiency_daily_delete_c3 <- subset(efficiency_daily,NEWID!="18"&NEWID!="39"&NEWID!="182"&NEWID!="247"&NEWID!="296")
 
-result2 <- dtw_function(efficiency_daily_delete_c3,"2021-01-01","2021-07-31")
+result2 <- dtw_function(efficiency_daily_delete_c3,"2021-03-29","2021-07-04")
 
 # cluster again
 k2 <- kmeans(result2, centers = 3, nstart = 25)
