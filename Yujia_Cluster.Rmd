@@ -25,6 +25,7 @@ library(rbenchmark)
 source("Input_Zeros.R") # input the data
 
 efficiency <- actual_daily$sum / execution_daily$sum
+#efficiency <- log(actual_daily$sum / execution_daily$sum)
 efficiency <- as.data.frame(efficiency)
 
 efficiency_daily <- data.frame(actual_daily$NEWID,actual_daily$date,efficiency)
@@ -33,8 +34,10 @@ efficiency_daily <- efficiency_daily %>%
   mutate(sum = replace(sum, sum == "NaN", 0))
 ```
 
+
+
+##### DTW method (Shape based distances)
 ```{r}
-#DTW method
 dtw_function <- function(x,begin_date,end_date){
   # change date column into date format
   x$date <-as.Date(x$date)
@@ -54,16 +57,16 @@ dtw_function <- function(x,begin_date,end_date){
   return(da)
 }
 # find dtw matrix
-```
 
-```{r}
 # result <- dtw_function(actual_daily,"2021-03-29","2021-07-04",320)
 result1 <- dtw_function(efficiency_daily,"2021-03-29","2021-07-04")
+```
 
+### K-mean cluster
+```{r}
 # Different cluster method: K-mean cluster, hierarchical cluster
-# K-mean cluster
 # choose the centers manually
-k1 <- kmeans(result1, centers = 3, nstart = 25)
+k1 <- kmeans(result1, centers =3, nstart = 25)
 fviz_cluster(k1, data = result1)
 ```
 
@@ -86,25 +89,26 @@ plot(k.values, wss_values,
 
 ```{r}
 # delete cluster3
-efficiency_daily_delete_c3 <- subset(efficiency_daily,NEWID!="18"&NEWID!="39"&NEWID!="182"&NEWID!="247"&NEWID!="296")
+efficiency_daily_delete <- subset(efficiency_daily,NEWID!="18"&NEWID!="39"&NEWID!="182"&NEWID!="247"&NEWID!="296")
 
-result2 <- dtw_function(efficiency_daily_delete_c3,"2021-03-29","2021-07-04")
+result2 <- dtw_function(efficiency_daily_delete,"2021-03-29","2021-07-04")
 
 # cluster again
 k2 <- kmeans(result2, centers = 3, nstart = 25)
 fviz_cluster(k2, data = result2)
 ```
 
+#### hierarchical cluster
 ```{r}
-############### hierarchical cluster
-# plot(hclust(result_b)) ## doesn't work for dataframe
+# plot(hclust(result_b)) -- PS. doesn't work for dataframe
 hclustfunc <- function(x) hclust(x, method="complete")
 distfunc <- function(x) as.dist((1-cor(t(x)))/2)
-d <- distfunc(result)
-fit <- hclustfunc(d)
+dist <- distfunc(result1)
+fit <- hclustfunc(dist)
 plot(fit)
+
 # No need for changing k
-fit <- cmdscale(result,eig=TRUE, k=2)
+fit <- cmdscale(result1,eig=TRUE, k=2)
 x <- fit$points[,1]
 y <- fit$points[,2]
 # Project the distance matrix to 2D plot. 
@@ -114,51 +118,69 @@ plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
 
 
 
+##### TQuest method (Feature-based distances)
 ```{r}
-### warehouse 48, 1,2 
-#### Playground and plot stuffs, 
-actual_daily$date <-as.Date(actual_daily$date)
+dtw_function <- function(x,begin_date,end_date){
+  x$date <-as.Date(x$date)
+  x <- x[x$date >=begin_date & x$date<= end_date,]
+  id_x <- unique(x$NEWID)
+  x <- split(x$sum, x$NEWID) %>% unlist()
+  x <- matrix(x,nrow = length(id_x))
+  da = dist(x, method="TSDistances", distance="tquest", tau=mean(x), diag=TRUE, upper=TRUE)
+  da <- as.data.frame(as.matrix(da))
+  row.names(da) <- unique(id_x)
+  return(da)
+}
 
-b <- actual_daily %>% 
-  filter(NEWID==48) %>%
-  filter(date>= "2021-03-29" & date <="2021-07-04")
-
-c <- actual_daily %>% 
-  filter(NEWID==226) %>%
-  filter(date>= "2021-03-29" & date <="2021-07-04")
-
-e <- actual_daily %>% 
-  filter(NEWID==1) %>%
-  filter(date>= "2021-03-29" & date <="2021-07-04")
-
-
-hh <- as.data.frame(cbind(c(1:98),c$sum,b$sum,e$sum))
-ggplot(hh, aes(x=V1,y = V2)) +
-    geom_line(aes(x = V1, y = V2), color = 'black') +
-    geom_line(aes(x = V1, y = V3), color = 'red') +
-    geom_line(aes(x = V1, y = V4), color = 'yellow')
-
-
-b <- actual_daily %>% filter(!NEWID %in% c(48,1,2,47,46,45))
-c <- actual_daily %>% filter(NEWID %in% c(1:20))
+result3 <- dtw_function(efficiency_daily,"2021-03-29","2021-07-04")
 ```
 
+### K-mean cluster
+```{r}
+# Different cluster method: K-mean cluster, hierarchical cluster
+# choose the centers manually
+k3 <- kmeans(result3, centers =3, nstart = 25)
+fviz_cluster(k3, data = result3)
+```
 
+### hierarchical cluster
+```{r}
+# plot(hclust(result_b)) -- PS. doesn't work for dataframe
+hclustfunc <- function(x) hclust(x, method="complete")
+distfunc <- function(x) as.dist((1-cor(t(x)))/2)
+dist <- distfunc(result3)
+fit <- hclustfunc(dist)
+plot(fit)
 
+# No need for changing k
+fit <- cmdscale(result1,eig=TRUE, k=2)
+x <- fit$points[,1]
+y <- fit$points[,2]
+# Project the distance matrix to 2D plot. 
+plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
+  main="Metric MDS")
+```
 
+```{r}
+# select warehouse
+efficiency_daily$date <-as.Date(efficiency_daily$date)
 
+a <- efficiency_daily %>% 
+  filter(NEWID==49) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
 
+b <- efficiency_daily %>% 
+  filter(NEWID==246) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
 
+plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum))
+ggplot(plot, aes(x=V1,y = V2)) +
+    geom_line(aes(x = V1, y = V2), color = 'blue') +
+    geom_line(aes(x = V1, y = V3), color = 'red') 
 
-
-
-
-
-
-
-
-
-
+#c <- actual_daily %>% filter(!NEWID %in% c(48,1,2,47,46,45))
+#d <- actual_daily %>% filter(NEWID %in% c(1:20))
+```
 
 
 
