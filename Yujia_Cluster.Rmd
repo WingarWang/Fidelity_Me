@@ -34,6 +34,7 @@ efficiency_daily <- efficiency_daily %>%
 ```
 
 ```{r}
+#DTW method
 dtw_function <- function(x,begin_date,end_date){
   # change date column into date format
   x$date <-as.Date(x$date)
@@ -53,18 +54,20 @@ dtw_function <- function(x,begin_date,end_date){
   return(da)
 }
 # find dtw matrix
-
-# result <- dtw_function(actual_daily,"2021-03-29","2021-07-04",320)
-result <- dtw_function(efficiency_daily,"2021-03-29","2021-07-04")
 ```
 
 ```{r}
+# result <- dtw_function(actual_daily,"2021-03-29","2021-07-04",320)
+result1 <- dtw_function(efficiency_daily,"2021-01-01","2021-08-01")
+
 # Different cluster method: K-mean cluster, hierarchical cluster
 # K-mean cluster
 # choose the centers manually
-k2 <- kmeans(result, centers = 3, nstart = 25)
-fviz_cluster(k2, data = result)
+k1 <- kmeans(result1, centers = 3, nstart = 25)
+fviz_cluster(k1, data = result1)
+```
 
+```{r}
 # function to compute total within-cluster sum of square 
 wss <- function(k) {
   kmeans(result, k, nstart = 25)$tot.withinss
@@ -79,6 +82,17 @@ plot(k.values, wss_values,
        xlab="Number of clusters K",
        ylab="Total within-clusters sum of squares")
 #https://www.datanovia.com/en/lessons/k-means-clustering-in-r-algorith-and-practical-examples/
+```
+
+```{r}
+# delete cluster3
+efficiency_daily_delete_c3 <- subset(efficiency_daily,NEWID!="18"&NEWID!="39"&NEWID!="182"&NEWID!="247"&NEWID!="296")
+
+result2 <- dtw_function(efficiency_daily_delete_c3,"2021-01-01","2021-07-31")
+
+# cluster again
+k2 <- kmeans(result2, centers = 3, nstart = 25)
+fviz_cluster(k2, data = result2)
 ```
 
 ```{r}
