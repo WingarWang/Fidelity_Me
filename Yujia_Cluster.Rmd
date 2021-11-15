@@ -98,7 +98,7 @@ k2 <- kmeans(result2, centers = 3, nstart = 25)
 fviz_cluster(k2, data = result2)
 ```
 
-#### hierarchical cluster
+### hierarchical cluster
 ```{r}
 # plot(hclust(result_b)) -- PS. doesn't work for dataframe
 hclustfunc <- function(x) hclust(x, method="complete")
@@ -168,11 +168,9 @@ efficiency_daily$date <-as.Date(efficiency_daily$date)
 a <- efficiency_daily %>% 
   filter(NEWID==49) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
-
 b <- efficiency_daily %>% 
   filter(NEWID==246) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
-
 plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum))
 ggplot(plot, aes(x=V1,y = V2)) +
     geom_line(aes(x = V1, y = V2), color = 'blue') +
@@ -180,6 +178,20 @@ ggplot(plot, aes(x=V1,y = V2)) +
 
 #c <- actual_daily %>% filter(!NEWID %in% c(48,1,2,47,46,45))
 #d <- actual_daily %>% filter(NEWID %in% c(1:20))
+
+a <- efficiency_daily %>% 
+  filter(NEWID==1) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+b <- efficiency_daily %>% 
+  filter(NEWID==100) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+c <- efficiency_daily %>% 
+  filter(NEWID==100) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum))
+ggplot(plot, aes(x=V1,y = V2)) +
+    geom_line(aes(x = V1, y = V2), color = 'blue') +
+    geom_line(aes(x = V1, y = V3), color = 'red') 
 ```
 
 
