@@ -24,14 +24,13 @@ library(rbenchmark)
 ```{r,message=FALSE}
 source("Input_Zeros.R") # input the data
 
-efficiency <- actual_daily$sum / execution_daily$sum
-#efficiency <- log(actual_daily$sum / execution_daily$sum)
+efficiency <- (actual_daily$sum+1) / (execution_daily$sum+1)
+efficiency <- log(efficiency)
 efficiency <- as.data.frame(efficiency)
 
 efficiency_daily <- data.frame(actual_daily$NEWID,actual_daily$date,efficiency)
 colnames(efficiency_daily) <- c("NEWID","date","sum")
-efficiency_daily <- efficiency_daily %>% 
-  mutate(sum = replace(sum, sum == "NaN", 0))
+#efficiency_daily <- efficiency_daily %>% mutate(sum = replace(sum, sum == "NaN", 0))
 ```
 
 
@@ -73,7 +72,7 @@ fviz_cluster(k1, data = result1)
 ```{r}
 # function to compute total within-cluster sum of square 
 wss <- function(k) {
-  kmeans(result, k, nstart = 25)$tot.withinss
+  kmeans(result1, k, nstart = 25)$tot.withinss
 }
 # Compute and plot wss for k = 1 to k = 5
 k.values <- 1:5
@@ -89,13 +88,13 @@ plot(k.values, wss_values,
 
 ```{r}
 # delete cluster3
-efficiency_daily_delete <- subset(efficiency_daily,NEWID!="18"&NEWID!="39"&NEWID!="182"&NEWID!="247"&NEWID!="296")
+#efficiency_daily_delete <- subset(efficiency_daily,NEWID!="18"&NEWID!="39"&NEWID!="182"&NEWID!="247"&NEWID!="296")
 
-result2 <- dtw_function(efficiency_daily_delete,"2021-03-29","2021-07-04")
+#result2 <- dtw_function(efficiency_daily_delete,"2021-03-29","2021-07-04")
 
 # cluster again
-k2 <- kmeans(result2, centers = 3, nstart = 25)
-fviz_cluster(k2, data = result2)
+#k2 <- kmeans(result2, centers = 3, nstart = 25)
+#fviz_cluster(k2, data = result2)
 ```
 
 ### hierarchical cluster
@@ -145,13 +144,13 @@ fviz_cluster(k3, data = result3)
 
 ```{r}
 # delete cluster3
-efficiency_daily_delete2 <- subset(efficiency_daily,NEWID!="49"&NEWID!="246")
+#efficiency_daily_delete2 <- subset(efficiency_daily,NEWID!="49"&NEWID!="246")
 
-result4 <- dtw_function(efficiency_daily_delete2,"2021-03-29","2021-07-04")
+#result4 <- dtw_function(efficiency_daily_delete2,"2021-03-29","2021-07-04")
 
 # cluster again
-k4 <- kmeans(result4, centers = 3, nstart = 25)
-fviz_cluster(k4, data = result4)
+#k4 <- kmeans(result4, centers = 3, nstart = 25)
+#Zfviz_cluster(k4, data = result4)
 ```
 
 ### hierarchical cluster
@@ -177,37 +176,61 @@ plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
 efficiency_daily$date <-as.Date(efficiency_daily$date)
 
 a <- efficiency_daily %>% 
-  filter(NEWID==49) %>%
+  filter(NEWID==315) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
 b <- efficiency_daily %>% 
-  filter(NEWID==246) %>%
+  filter(NEWID==269) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
-plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum))
+c <- efficiency_daily %>% 
+  filter(NEWID==147) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+d <- efficiency_daily %>% 
+  filter(NEWID==216) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+e <- efficiency_daily %>% 
+  filter(NEWID==107) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+f <- efficiency_daily %>% 
+  filter(NEWID==111) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum,c$sum,d$sum,e$sum,f$sum))
 ggplot(plot, aes(x=V1,y = V2)) +
     geom_line(aes(x = V1, y = V2), color = 'red') +
-    geom_line(aes(x = V1, y = V3), color = 'blue') 
+    geom_line(aes(x = V1, y = V3), color = 'red') +
+    geom_line(aes(x = V1, y = V4), color = 'green') +
+    geom_line(aes(x = V1, y = V5), color = 'green') +
+    geom_line(aes(x = V1, y = V6), color = 'blue') +
+    geom_line(aes(x = V1, y = V7), color = 'blue') 
 
 #c <- actual_daily %>% filter(!NEWID %in% c(48,1,2,47,46,45))
 #d <- actual_daily %>% filter(NEWID %in% c(1:20))
 
 a <- efficiency_daily %>% 
-  filter(NEWID==1) %>%
+  filter(NEWID==240) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
 b <- efficiency_daily %>% 
-  filter(NEWID==100) %>%
+  filter(NEWID==305) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
 c <- efficiency_daily %>% 
-  filter(NEWID==200) %>%
+  filter(NEWID==179) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
 d <- efficiency_daily %>% 
-  filter(NEWID==300) %>%
+  filter(NEWID==120) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
-plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum,c$sum,d$sum))
+e <- efficiency_daily %>% 
+  filter(NEWID==26) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+f <- efficiency_daily %>% 
+  filter(NEWID==22) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum,c$sum,d$sum,e$sum,f$sum))
 ggplot(plot, aes(x=V1,y = V2)) +
-    geom_line(aes(x = V1, y = V2), color = 'red') +
-    geom_line(aes(x = V1, y = V3), color = 'green') +
-    geom_line(aes(x = V1, y = V4), color = 'blue') +
-    geom_line(aes(x = V1, y = V5), color = 'purple')
+    geom_line(aes(x = V1, y = V2), color = 'black') +
+    geom_line(aes(x = V1, y = V3), color = 'black') +
+    geom_line(aes(x = V1, y = V4), color = 'yellow') +
+    geom_line(aes(x = V1, y = V5), color = 'yellow') +
+    geom_line(aes(x = V1, y = V6), color = 'purple') +
+    geom_line(aes(x = V1, y = V7), color = 'purple') 
 ```
 
 
