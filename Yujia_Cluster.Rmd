@@ -118,7 +118,7 @@ plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
 
 
 
-##### TQuest method (Feature-based distances)
+##### TQuest method (Feature-based distances)(Computes the Tquest distance between a pair of numeric vectors.)
 ```{r}
 dtw_function <- function(x,begin_date,end_date){
   x$date <-as.Date(x$date)
