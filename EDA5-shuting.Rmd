@@ -1,0 +1,334 @@
+---
+title: "EDA5-shuting"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+# open XQuartz
+library(TSdist)
+library(lubridate)
+library(tibble)
+library(factoextra)
+library(rbenchmark)
+library(autoencoder)
+```
+
+## import data
+```{r}
+actual_daily <- read_csv("~/Desktop/BU-2021fall/partner project/fidelity-github/11.14备份/lst/data/actual_daily.csv")
+actual_daily$date <- as.character(actual_daily$date)
+
+execution_daily <- read.csv("~/Desktop/BU-2021fall/partner project/fidelity-github/11.14备份/lst/data/execution_daily.csv")
+
+efficiency_daily <- inner_join(actual_daily,execution_daily,by=c("NEWID","date"))
+efficiency_daily$efficiency <- log(efficiency_daily$sum.y/efficiency_daily$sum.x)
+efficiency_daily$efficiency_exp <- efficiency_daily$sum.y/efficiency_daily$sum.x
+write.csv(efficiency_daily,file="~/Desktop/efficiency_daily.csv")
+```
+
+## compute effi & ac distance of one warehouse
+```{r}
+##test, choose ID=9, date from 650 to 732
+a <- actual_daily[actual_daily$NEWID==9,5]
+a1 <- a[650:732,]
+eff <- efficiency_daily[efficiency_daily$NEWID==9,9]
+eff <- as.matrix(eff)
+eff[is.nan(eff)]<-0
+eff1 <- eff[650:732,]
+# da=dist(a1,eff1, method="TSDistances", distance="dtw", sigma=10)
+# dim(da)
+
+DTWDistance(a1,eff1, window.type="sakoechiba", window.size=7)
+
+  actual <- actual_daily[c(650:732),5]
+  effient <- efficiency_daily[c(650:732),9]
+  eff <- as.matrix(eff)
+  eff[is.nan(eff)]<-0
+  DTWDistance(a1,eff1, window.type="sakoechiba", window.size=7)
+```
+
+
+## loop for 320 warehouses to compute efficiency & actual credit distance
+```{r,warning=FALSE}
+actual_daily$date <-as.Date(actual_daily$date)
+efficiency_daily$date <-as.Date(efficiency_daily$date)
+dis <- rep(NA,320)
+
+effi_actual_distance <- function(begin,end){
+#  begin <- "2021-03-29"
+#  end <- "2021-07-04"
+  actual_0 <- actual_daily[actual_daily$date >=begin & actual_daily$date<= end,]
+  effient_0 <- efficiency_daily[efficiency_daily$date >=begin & efficiency_daily$date<= end,] 
+  for (i in 1:320){
+#    i <- 190
+  actual <- actual_0[actual_0$NEWID==i,5] 
+  effient <- effient_0[effient_0$NEWID==i,9]
+  effient <- as.matrix(effient)
+  effient[is.nan(effient)]<-0
+  effient[!is.finite(effient)]<-0
+  dis[i] <- DTWDistance(actual,effient, window.type="sakoechiba", window.size=7)
+  }
+return(dis)
+}
+
+dis_final <- effi_actual_distance("2021-03-29","2021-07-04")
+dis_final <- data.frame(NEWID=c(1:320),dis_final)
+#length(which(dis_final != 0))
+```
+
+## group warehouses based on distance between effiency and actual credit
+```{r}
+##plot
+scatter <- ggplot(dis_final)+
+  geom_point(aes(x=NEWID,y=dis_final))+
+  ylim(0,15000)
+ggplotly(scatter)
+```
+From scatter plot, NEWID=9 has extermely high distance, over 14000, which means it's efficiency pattern is extremely different with its actual credit pattern from 2021-03-29 to 2021-07-04.
+
+
+```{r}
+## drop NEWID = 9
+df <- dis_final[-9,]
+df.scaled <- scale(df[,-1])
+## choose best K
+fviz_nbclust(df,kmeans, method = "wss") +
+geom_vline(xintercept = 4, linetype = 2)   ## Best K = 4
+## Compute k-means with k = 4
+set.seed(1)
+kmdis <- kmeans(df.scaled, centers = 4, nstart = 25)
+print(kmdis)
+## Visualize k-means
+fviz_cluster(kmdis, df, geom="text") ##use it
+fviz_cluster(kmdis, df, ellipse.type = "norm")
+
+## drop NEWID = 274
+df1 <- df[-273,]
+df1.scaled <- scale(df1[,-1])
+set.seed(111)
+kmdis1 <- kmeans(df1.scaled, centers = 3, nstart = 25)
+fviz_cluster(kmdis1, df1, geom="text")
+
+## add cluster info to original data
+table <- cbind(df, cluster = kmdis$cluster)
+```
+
+TIPS:
+As the final result of k-means clustering result is sensitive to the random starting assignments, we specify nstart = 25. This means that R will try 25 different random starting assignments and then select the best results corresponding to the one with the lowest within cluster variation.
+
+
+
+
+
+# try to compare exe & actual credit
+
+## loop for 320 warehouses to compute execution & actual credit distance
+```{r,warning=FALSE}
+actual_daily$date <-as.Date(actual_daily$date)
+execution_daily$date <-as.Date(execution_daily$date)
+
+## Define function to compute distance in a time period
+exe_actual_distance <- function(begin,end,take_log=FALSE){
+  dis_ac_exe <- rep(NA,320)
+  acct_ave <- rep(NA,320)
+  exec_ave <- rep(NA,320)
+  actual_0 <- actual_daily[actual_daily$date >=begin & actual_daily$date<= end,]
+  exe_0 <- execution_daily[execution_daily$date >=begin & execution_daily$date<= end,] 
+  minact<-min(actual_0[actual_0$sum>0,]$sum)
+  minexc<-min(exe_0[exe_0$sum>0,]$sum)
+  for (i in 1:320){
+    if(!take_log){
+      actual <- actual_0[actual_0$NEWID==i,5] 
+      exe <- exe_0[exe_0$NEWID==i,5]
+      acct_ave[i]<-mean(unlist(actual))
+      exec_ave[i]<-mean(unlist(exe))
+      dis_ac_exe[i] <- DTWDistance(actual,exe, window.type="sakoechiba",window.size=1)
+     }
+    else{
+      logactual<-log(actual+minact)
+      logexectut<-log(exe+minexc)  
+      acct_ave[i]<-mean(unlist(logactual))
+      exec_ave[i]<-mean(unlist(logexectut))
+      dis_ac_exe[i] <- DTWDistance(logactual,logexectut, window.type="sakoechiba", window.size=1)
+  }
+  }
+return(data.frame(actual=acct_ave, executed=exec_ave,distance=dis_ac_exe))
+}
+
+
+# output distance table 320*4 of (act & exe) or (log(act) & log (exe))
+dis_ac_exe_final2 <-exe_actual_distance("2021-03-29","2021-07-04")
+dis_ac_exe_final2 <- data.frame(NEWID=c(1:320),dis_ac_exe_final2)
+
+dis_ac_exe_final_log <-exe_actual_distance("2021-03-29","2021-07-04",TRUE)
+dis_ac_exe_final_log <- data.frame(NEWID=c(1:320),dis_ac_exe_final_log)
+
+## make plot
+par(mfrow=c(1,2))
+plot(log(dis_ac_exe_final2$actual), log(dis_ac_exe_final2$distance))
+plot(log(dis_ac_exe_final2$executed), log(dis_ac_exe_final2$distance))
+
+ggplot(dis_ac_exe_final2)+geom_point()+
+  aes(x=(executed), y=(actual), color=log(distance))+geom_abline(slope=1, intercept=0)+geom_quantile()+scale_x_log10()+scale_y_log10()
+
+ggplot(dis_ac_exe_final2)+geom_point()+
+  aes(x=(executed/actual), y=(distance))+geom_abline(slope=1, intercept=0)+geom_quantile()+scale_x_log10()+scale_y_log10()
+
+```
+log make less influence of gap between exe & act.
+From
+
+## group warehouses based on distance between effiency and actual credit
+```{r}
+##plot
+scatter <- ggplot(dis_ac_exe_final)+
+  geom_point(aes(x=NEWID,y=dis_ac_exe_final))+
+  ylim(0,5000)
+ggplotly(scatter)
+```
+From scatter plot, NEWID=9 has extermely high distance, over 4700, which means it's effiency is not stable from 2021-03-29 to 2021-07-04.
+
+```{r}
+## drop NEWID = 9 (new dataset:df)
+df_ac_exe <- dis_ac_exe_final[-9,]
+df_ac_exe.scaled <- scale(df_ac_exe[,-1])
+
+dis_ac_exe_final2<-exe_actual_distance_2("2021-03-29","2021-07-04")
+dis_ac_exe_final2 <- data.frame(NEWID=c(1:320),dis_ac_exe_final2)
+df_ac_exe2 <- dis_ac_exe_final2[,-c(2,3)]
+df_ac_exe.scaled2 <- scale(df_ac_exe2[,-1])
+
+## choose best K
+fviz_nbclust(df_ac_exe,kmeans, method = "wss") +
+geom_vline(xintercept = 3, linetype = 2)   ## Best K = 3
+
+fviz_nbclust(df_ac_exe2,kmeans, method = "wss") + geom_vline(xintercept = 3, linetype = 2) 
+## Compute k-means with k = 3
+set.seed(1)
+kmdis_ac_exe <- kmeans(df_ac_exe.scaled, centers = 3, nstart = 25)
+print(kmdis_ac_exe)
+
+kmdis_ac_exe2 <- kmeans(df_ac_exe.scaled2, centers = 3, nstart = 25)
+
+## Visualize k-means
+fviz_cluster(kmdis_ac_exe, df_ac_exe, geom="text") ##use it
+
+fviz_cluster(kmdis_ac_exe2, df_ac_exe2, geom="text") ##use it
+
+## add clutering info to original dataset
+df_ac_exe_cluster <- cbind(df_ac_exe, cluster = kmdis_ac_exe$cluster)
+df_ac_exe_cluster[nrow(df_ac_exe_cluster)+1,] <- dis_ac_exe_final[9,]
+df_ac_exe_cluster[,3][df_ac_exe_cluster[,3]==9] <- NA
+df_ac_exe_cluster <- arrange(df_ac_exe_cluster,NEWID)
+```
+
+## Validation
+```{r}
+distanceAcExe <- dis_ac_exe_final[dis_ac_exe_final$NEWID %in% c(202,236,241,274,288),]
+distanceAcExe$logDis <- log(distanceAcExe$dis_ac_exe_final)
+
+log_effi <- efficiency_daily[efficiency_daily$date >="2021-03-29" & efficiency_daily$date<= "2021-07-04",]
+
+join <- left_join(log_effi,dis_ac_exe_final,by="NEWID")
+join_test <- join[join$NEWID %in% c(274,241,288,236,202),]
+
+plot1 <- ggplot()+
+  geom_boxplot(data=join_test,aes(x=factor(NEWID),y=efficiency),color="blue",notch=TRUE)
+
+plot1+
+  geom_point(data=distanceAcExe,aes(x=factor(NEWID),y=logDis),color="red")
+
+test <- actual_daily[actual_daily$NEWID==274,]
+test <- test[test$date >="2021-03-29" & test$date<= "2021-07-04",]
+
+testEXE <- execution_daily[execution_daily$NEWID==274,]
+testEXE <- testEXE[testEXE$date >="2021-03-29" & testEXE$date<= "2021-07-04",]
+
+testEFFI <- efficiency_daily[efficiency_daily$NEWID==274,]
+testEFFI <- testEFFI[testEFFI$date >="2021-03-29" & testEFFI$date<= "2021-07-04",]
+
+log(dis_ac_exe_final[dis_ac_exe_final$NEWID==274,2])
+
+ggplot(testEXE)+
+  geom_line(aes(x=date,y=sum))+
+  geom_hline(yintercept = 6.820545)
+
+```
+make a function to pick 5 of each group, show their actual series, exe, efficiency, show difference, interpret it.
+
+```{r}
+exe_actual_validate <- function(begin,end,ID1,ID2,ID3,ID4,ID5){
+  # begin <- "2021-03-29"
+  # end <- "2021-07-04"
+  # ID1 <- 274
+  # ID2 <- 9
+  ac_validate <- actual_daily[actual_daily$NEWID %in% c(ID1,ID2,ID3,ID4,ID5),]
+  ac_validate <- ac_validate[ac_validate$date >=begin & ac_validate$date<= end,]
+  exe_validate <- execution_daily[execution_daily$NEWID %in% c(ID1,ID2,ID3,ID4,ID5),]
+  exe_validate <- exe_validate[exe_validate$date >=begin & exe_validate$date<= end,]
+  acplot <- ggplot(ac_validate) + 
+    geom_line(aes(x=date,y=sum,color=factor(NEWID)))+
+    ylab("actual_credit")
+  exeplot <- ggplot(exe_validate) +
+    geom_line(aes(x=date,y=sum,color=factor(NEWID)))+
+    ylab("execution_credit")
+  # newlist <- 
+  return(list(acplot,exeplot))
+}
+
+exe_actual_validate("2020-11-29","2021-01-24",98,232,34,274,288)
+```
+
+```{r}
+exe_actual_validate_one_warehouse <- function(begin,end,ID1){
+  # begin <- "2021-03-29"
+  # end <- "2021-07-04"
+  # ID1 <- 274
+  # ID2 <- 9
+  ac_validate <- actual_daily[actual_daily$NEWID %in% c(ID1),]
+  ac_validate <- ac_validate[ac_validate$date >=begin & ac_validate$date<= end,]
+  exe_validate <- execution_daily[execution_daily$NEWID %in% c(ID1),]
+  exe_validate <- exe_validate[exe_validate$date >=begin & exe_validate$date<= end,]
+  datatemp<- data.frame(date= exe_validate$date, 
+                        actual=ac_validate$sum, execute=exe_validate$sum)
+  acplot <- ggplot(reshape2::melt(datatemp, id="date")) + 
+    geom_line()+aes(x=date,y=value,color=variable)+
+    ylab("credit")+ggtitle(paste("warehouse:",ID1))
+  # newlist <- 
+  return(acplot)
+}
+
+date.start="2021-03-29"
+date.end="2021-07-04"
+gridExtra::grid.arrange(exe_actual_validate_one_warehouse(date.start,date.end,98),
+                        exe_actual_validate_one_warehouse(date.start,date.end,232),
+                        exe_actual_validate_one_warehouse(date.start,date.end,34),
+                        exe_actual_validate_one_warehouse(date.start,date.end,274),
+                        exe_actual_validate_one_warehouse(date.start,date.end,288),
+                        ncol=5)
+```
+
+```{r}
+library(pheatmap)
+pheatmap(log(dis_ac_exe_final2[,-1]+1))
+set.seed(1)
+fitres <- pheatmap(log(dis_ac_exe_final2[,-1]+1),kmeans_k = 6)
+fitres$kmeans$cluster
+
+# cluster 2--high distance & big actual
+exe_actual_validate_one_warehouse(date.start,date.end,1)
+# cluster1--fairly high dis & big actual
+exe_actual_validate_one_warehouse(date.start,date.end,118)
+# cluster3--relatively high & big
+exe_actual_validate_one_warehouse(date.start,date.end,273)
+
+# cluster5--low & very low
+exe_actual_validate_one_warehouse(date.start,date.end,2)
+```
+
