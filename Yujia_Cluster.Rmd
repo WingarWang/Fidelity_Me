@@ -196,11 +196,11 @@ f <- efficiency_daily %>%
 plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum,c$sum,d$sum,e$sum,f$sum))
 ggplot(plot, aes(x=V1,y = V2)) +
     geom_line(aes(x = V1, y = V2), color = 'red') +
-    geom_line(aes(x = V1, y = V3), color = 'orange') +
-    geom_line(aes(x = V1, y = V4), color = 'green') +
+    geom_line(aes(x = V1, y = V3), color = 'red') +
+    geom_line(aes(x = V1, y = V4), color = 'sky blue') +
     geom_line(aes(x = V1, y = V5), color = 'sky blue') +
-    geom_line(aes(x = V1, y = V6), color = 'purple') +
-    geom_line(aes(x = V1, y = V7), color = 'pink') +
+    geom_line(aes(x = V1, y = V6), color = 'orange') +
+    geom_line(aes(x = V1, y = V7), color = 'orange') +
     labs(x='Date',y='Efficiency',title='Pattern of warehouse in Mar 29 to Jul 4 in 2021') 
 
 #c <- actual_daily %>% filter(!NEWID %in% c(48,1,2,47,46,45))
@@ -222,27 +222,94 @@ e <- efficiency_daily %>%
   filter(NEWID==26) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
 f <- efficiency_daily %>% 
-  filter(NEWID==22) %>%
+  filter(NEWID==49) %>%
   filter(date>= "2021-03-29" & date <="2021-07-04")
 plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum,c$sum,d$sum,e$sum,f$sum))
 ggplot(plot, aes(x=V1,y = V2)) +
-    geom_line(aes(x = V1, y = V2), color = 'black') +
-    geom_line(aes(x = V1, y = V3), color = 'black') +
-    geom_line(aes(x = V1, y = V4), color = 'yellow') +
-    geom_line(aes(x = V1, y = V5), color = 'yellow') +
-    geom_line(aes(x = V1, y = V6), color = 'purple') +
-    geom_line(aes(x = V1, y = V7), color = 'purple') +
+    geom_line(aes(x = V1, y = V2), color = 'orange') +
+    geom_line(aes(x = V1, y = V3), color = 'orange') +
+    geom_line(aes(x = V1, y = V4), color = 'red') +
+    geom_line(aes(x = V1, y = V5), color = 'red') +
+    geom_line(aes(x = V1, y = V6), color = 'sky blue') +
+    geom_line(aes(x = V1, y = V7), color = 'sky blue') +
     labs(x='Date',y='Efficiency',title='Pattern of warehouse in Mar 29 to Jul 4 in 2021') 
 ```
 
 
 ```{r}
+a <- efficiency_daily %>% 
+  filter(NEWID==315) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+b <- efficiency_daily %>% 
+  filter(NEWID==269) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
 plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum))
 ggplot(plot, aes(x=V1,y = V2)) +
     geom_line(aes(x = V1, y = V2), color = 'red') +
-    geom_line(aes(x = V1, y = V3), color = 'orange') +
+    geom_line(aes(x = V1, y = V3), color = 'red')
     labs(x='Date',y='Efficiency',title='Pattern of warehouse in Mar 29 to Jul 4 in 2021')
-     
+
+c <- efficiency_daily %>% 
+  filter(NEWID==147) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+d <- efficiency_daily %>% 
+  filter(NEWID==216) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+plot <- as.data.frame(cbind(c(1:98),c$sum,d$sum))
+ggplot(plot, aes(x=V1,y = V2)) +
+    geom_line(aes(x = V1, y = V2), color = 'sky blue') +
+    geom_line(aes(x = V1, y = V3), color = 'sky blue') 
+    labs(x='Date',y='Efficiency',title='Pattern of warehouse in Mar 29 to Jul 4 in 2021') 
+
+e <- efficiency_daily %>% 
+  filter(NEWID==107) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+f <- efficiency_daily %>% 
+  filter(NEWID==111) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+plot <- as.data.frame(cbind(c(1:98),e$sum,f$sum))
+ggplot(plot, aes(x=V1,y = V2)) +
+    geom_line(aes(x = V1, y = V2), color = 'orange') +
+    geom_line(aes(x = V1, y = V3), color = 'orange')
+    labs(x='Date',y='Efficiency',title='Pattern of warehouse in Mar 29 to Jul 4 in 2021') 
+
+    
+a <- efficiency_daily %>% 
+  filter(NEWID==240) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+b <- efficiency_daily %>% 
+  filter(NEWID==305) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+plot <- as.data.frame(cbind(c(1:98),a$sum,b$sum))
+ggplot(plot, aes(x=V1,y = V2)) +
+    geom_line(aes(x = V1, y = V2), color = 'red') +
+    geom_line(aes(x = V1, y = V3), color = 'red')
+    labs(x='Date',y='Efficiency',title='Pattern of warehouse in Mar 29 to Jul 4 in 2021')
+
+c <- efficiency_daily %>% 
+  filter(NEWID==179) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+d <- efficiency_daily %>% 
+  filter(NEWID==120) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+plot <- as.data.frame(cbind(c(1:98),c$sum,d$sum))
+ggplot(plot, aes(x=V1,y = V2)) +
+    geom_line(aes(x = V1, y = V2), color = 'sky blue') +
+    geom_line(aes(x = V1, y = V3), color = 'sky blue') 
+    labs(x='Date',y='Efficiency',title='Pattern of warehouse in Mar 29 to Jul 4 in 2021') 
+
+e <- efficiency_daily %>% 
+  filter(NEWID==26) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+f <- efficiency_daily %>% 
+  filter(NEWID==49) %>%
+  filter(date>= "2021-03-29" & date <="2021-07-04")
+plot <- as.data.frame(cbind(c(1:98),e$sum,f$sum))
+ggplot(plot, aes(x=V1,y = V2)) +
+    geom_line(aes(x = V1, y = V2), color = 'orange') +
+    geom_line(aes(x = V1, y = V3), color = 'orange')
+    labs(x='Date',y='Efficiency',title='Pattern of warehouse in Mar 29 to Jul 4 in 2021') 
+
 ```
 
 
